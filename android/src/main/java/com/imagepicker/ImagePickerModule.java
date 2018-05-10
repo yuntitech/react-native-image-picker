@@ -222,7 +222,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
       responseHelper.invokeError(callback, "can't find current Activity");
       return;
     }
-
+    this.callback = callback;
     this.options = options;
 
     if (!permissionsCheck(currentActivity, callback, REQUEST_PERMISSIONS_FOR_CAMERA))
@@ -310,7 +310,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
       responseHelper.invokeError(callback, "can't find current Activity");
       return;
     }
-
+    this.callback = callback;
     this.options = options;
 
     if (!permissionsCheck(currentActivity, callback, REQUEST_PERMISSIONS_FOR_LIBRARY))
