@@ -597,6 +597,9 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
       else
       {
         String[] PERMISSIONS = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
+        writeLogNative(activity, " activity is " + activity.getClass().getName());
+        writeLogNative(activity, " activity instanceof PermissionAwareActivity " + (activity instanceof PermissionAwareActivity));
+        writeLogNative(activity, " activity instanceof OnImagePickerPermissionsCallback " + (activity instanceof OnImagePickerPermissionsCallback));
         if (activity instanceof ReactActivity)
         {
           ((ReactActivity) activity).requestPermissions(PERMISSIONS, requestCode, listener);
@@ -618,6 +621,32 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
       }
     }
     return true;
+  }
+
+  public static void writeLogNative(Context context, String log) {
+    StringBuffer buf = new StringBuffer();
+    buf.append(DateUtils.formatDateTime(context, System.currentTimeMillis(),
+            DateUtils.FORMAT_SHOW_TIME)).append("\n");
+    buf.append(log).append("\n");
+    try {
+      FileUtils.write(getLogFile(context), buf.toString(), true);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private static File getLogFile(Context context) {
+    return new File(String.format(Locale.CHINA, "%s/%s/log.txt",
+            getRootExternalStorage(), context.getPackageName()));
+  }
+
+  private static final String ANDROID_DATA = "/Android/data";
+
+  /**
+   * 获取/Android/data的根路径
+   */
+  public static String getRootExternalStorage() {
+    return Environment.getExternalStorageDirectory().getAbsolutePath() + ANDROID_DATA;
   }
 
   private boolean isCameraAvailable() {
