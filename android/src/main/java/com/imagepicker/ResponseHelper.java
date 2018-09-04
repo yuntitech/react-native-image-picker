@@ -4,7 +4,10 @@ import android.support.annotation.NonNull;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Callback;
+import com.facebook.react.bridge.CallbackImpl;
 import com.facebook.react.bridge.WritableMap;
+
+import java.lang.reflect.Field;
 
 /**
  * Created by rusfearuth on 24.02.17.
@@ -73,6 +76,18 @@ public class ResponseHelper
 
     public void invokeResponse(@NonNull final Callback callback)
     {
-        callback.invoke(response);
+        try {
+            if (callback instanceof CallbackImpl) {
+                Field field = CallbackImpl.class.getDeclaredField("mInvoked");
+                field.setAccessible(true);
+                boolean mInvoked = (boolean) field.get(callback);
+                if (mInvoked) {
+                    return;
+                }
+            }
+            callback.invoke(response);
+        } catch (Exception e) {
+            //ignore
+        }
     }
 }
