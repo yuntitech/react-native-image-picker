@@ -7,7 +7,7 @@
 
 @import MobileCoreServices;
 
-@interface ImagePickerManager ()
+@interface ImagePickerManager () <UIPopoverPresentationControllerDelegate>
 
 @property (nonatomic, strong) UIAlertController *alertController;
 @property (nonatomic, strong) UIImagePickerController *picker;
@@ -91,6 +91,9 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
 
         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
             self.alertController.popoverPresentationController.permittedArrowDirections = 0;
+            if (!self.alertController.popoverPresentationController.delegate) {
+                self.alertController.popoverPresentationController.delegate = self;
+            }
             for (id subview in self.alertController.view.subviews) {
                 if ([subview isMemberOfClass:[UIView class]]) {
                     ((UIView *)subview).backgroundColor = [UIColor whiteColor];
@@ -522,6 +525,14 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
             self.callback(@[@{@"didCancel": @YES}]);
         }];
     });
+}
+
+#pragma mark - UIPopoverPresentationControllerDelegate
+
+- (void)popoverPresentationController:(UIPopoverPresentationController *)popoverPresentationController
+          willRepositionPopoverToRect:(inout CGRect *)rect inView:(inout UIView  * __nonnull * __nonnull)view {
+    CGRect bounds = (*view).bounds;
+    *rect = CGRectMake(bounds.size.width / 2.0, bounds.size.height, 1.0, 1.0);
 }
 
 #pragma mark - Helpers
