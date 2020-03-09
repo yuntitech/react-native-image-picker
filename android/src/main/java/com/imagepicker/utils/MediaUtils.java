@@ -99,7 +99,7 @@ public class MediaUtils
 
         if (photo == null)
         {
-            return null;
+            return imageConfig;
         }
 
         ImageConfig result = imageConfig;
