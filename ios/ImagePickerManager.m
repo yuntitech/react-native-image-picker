@@ -376,6 +376,12 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
       else {
         data = UIImageJPEGRepresentation(image, [[self.options valueForKey:@"quality"] floatValue]);
       }
+        
+      if (data == nil) {
+        self.callback(@[@{@"error": @"未能读取到图片"}]);
+        return;
+      }
+        
       [data writeToFile:path atomically:YES];
       
       if (![[self.options objectForKey:@"noData"] boolValue]) {
