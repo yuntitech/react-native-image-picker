@@ -472,7 +472,10 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
         responseHelper.putString("path", path);
 
         if (!noData) {
-            responseHelper.putString("data", getBase64StringFromFile(path));
+            String dataBase64 = getBase64StringFromFile(path);
+            if(dataBase64 != null){
+                responseHelper.putString("data", dataBase64);
+            }
         }
 
         putExtraFileInfo(path, responseHelper);
