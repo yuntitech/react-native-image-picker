@@ -620,6 +620,9 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+        if (inputStream == null) {
+            return null;
+        }
 
         byte[] bytes;
         byte[] buffer = new byte[8192];
