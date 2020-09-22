@@ -296,7 +296,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
         NSURL *imageURL = editingInput.fullSizeImageURL;
         
         NSString *tempFileName = [[NSUUID UUID] UUIDString];
-        if (imageURL && [[imageURL absoluteString] rangeOfString:@"ext=GIF"].location != NSNotFound) {
+        if (imageURL && [[imageURL absoluteString] rangeOfString:@"GIF"].location != NSNotFound) {
             fileName = [tempFileName stringByAppendingString:@".gif"];
         }
         else if ([[[self.options objectForKey:@"imageFileType"] stringValue] isEqualToString:@"png"]) {
@@ -350,7 +350,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
         __block BOOL isGif = NO;
         
         // Gif 特殊处理
-        if (imageURL && [[imageURL absoluteString] rangeOfString:@"ext=GIF"].location != NSNotFound) {
+        if (imageURL && [[imageURL absoluteString] rangeOfString:@"GIF"].location != NSNotFound) {
             PHImageRequestOptions *options = [PHImageRequestOptions new];
             options.resizeMode = PHImageRequestOptionsResizeModeFast;
             options.synchronous = YES;
@@ -481,9 +481,13 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
             PHPickerResult *pickerResult = results.firstObject;
             PHFetchResult<PHAsset *> *assets = [PHAsset fetchAssetsWithLocalIdentifiers:@[pickerResult.assetIdentifier] options:nil];
             if (assets.count == 0) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [[PHPhotoLibrary sharedPhotoLibrary] presentLimitedLibraryPickerFromViewController:RCTPresentedViewController()];
-                });
+                if (self.isPhotoLibraryLimitedAccess) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [[PHPhotoLibrary sharedPhotoLibrary] presentLimitedLibraryPickerFromViewController:RCTPresentedViewController()];
+                    });
+                } else {
+                    self.callback(@[@{@"error": @"Photo is empty"}]);
+                }
                 return;
             }
             PHAsset *pickedAsset = assets.lastObject;
@@ -981,8 +985,14 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
                     return;
                 }
                 else {
-                    callback(NO);
-                    return;
+                    if (status == PHAuthorizationStatusLimited) {
+                        self.isPhotoLibraryLimitedAccess = YES;
+                        callback(YES);
+                        return;
+                    } else {
+                        callback(NO);
+                        return;
+                    }
                 }
             }];
         }
