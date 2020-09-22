@@ -491,7 +491,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
                 return;
             }
             PHAsset *pickedAsset = assets.lastObject;
-            [ImagePickerManager getPhotoAssetPHContentEditingInputWithAsset:pickedAsset completionHandler:^(PHContentEditingInput *editingInput) {
+            [self getPhotoAssetPHContentEditingInputWithAsset:pickedAsset completionHandler:^(PHContentEditingInput *editingInput) {
                 photoAssetImageEditingInputCompletionHandler(editingInput, image, pickedAsset);
             }];
         }
@@ -512,12 +512,22 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
 /**
  通过 PHAsset 对象获取图片的 PHContentEditingInput 内容
  */
-+ (void)getPhotoAssetPHContentEditingInputWithAsset:(PHAsset *)asset completionHandler:(void (^)(PHContentEditingInput *))completionHandler
+- (void)getPhotoAssetPHContentEditingInputWithAsset:(PHAsset *)asset completionHandler:(void (^)(PHContentEditingInput *))completionHandler API_AVAILABLE(ios(14));
 {
     PHContentEditingInputRequestOptions *options = [[PHContentEditingInputRequestOptions alloc] init];
     options.networkAccessAllowed = false;
     [asset requestContentEditingInputWithOptions:options completionHandler:^(PHContentEditingInput * _Nullable contentEditingInput, NSDictionary * _Nonnull info) {
-        completionHandler(contentEditingInput);
+        if (contentEditingInput == nil) {
+            if (self.isPhotoLibraryLimitedAccess) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [[PHPhotoLibrary sharedPhotoLibrary] presentLimitedLibraryPickerFromViewController:RCTPresentedViewController()];
+                });
+            } else {
+                self.callback(@[@{@"error": @"Photo is empty"}]);
+            }
+        } else {
+            completionHandler(contentEditingInput);
+        }
     }];
 }
 
