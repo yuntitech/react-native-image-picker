@@ -8,16 +8,20 @@
 
 @import MobileCoreServices;
 
-
-API_AVAILABLE(ios(14))
-@interface ImagePickerManager () <UIPopoverPresentationControllerDelegate, PHPickerViewControllerDelegate>
+@interface ImagePickerManager () <UIPopoverPresentationControllerDelegate
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000 // Xcode 12 and iOS 14, or greater
+, PHPickerViewControllerDelegate
+#endif
+>
 @property (nonatomic, strong) UIAlertController *alertController;
 @property (nonatomic, strong) UIImagePickerController *picker;
 @property (nonatomic, strong) RCTResponseSenderBlock callback;
 @property (nonatomic, strong) NSDictionary *defaultOptions;
 @property (nonatomic, retain) NSMutableDictionary *options, *response;
 @property (nonatomic, strong) NSArray *customButtons;
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000
 @property (nonatomic, strong) PHPickerViewController *phPicker;
+#endif
 @property (nonatomic, assign) BOOL isPhotoLibraryLimitedAccess;
 @end
 
@@ -33,7 +37,9 @@ RCT_EXPORT_METHOD(launchCamera:(NSDictionary *)options callback:(RCTResponseSend
 {
     self.callback = callback;
     if (@available(iOS 14, *)) {
+        #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000
         [self launchPhotoKitImagePicker:RNImagePickerTargetCamera options:options];
+        #endif
     } else {
         [self launchImagePicker:RNImagePickerTargetCamera options:options];
     }
@@ -47,7 +53,9 @@ RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTRespon
 {
     self.callback = callback;
     if (@available(iOS 14, *)) {
+        #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000
         [self launchPhotoKitImagePicker:RNImagePickerTargetLibrarySingleImage options:options];
+        #endif
     } else {
         [self launchImagePicker:RNImagePickerTargetLibrarySingleImage options:options];
     }
@@ -150,7 +158,9 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
     else if ([action.title isEqualToString:[self.options valueForKey:@"chooseFromLibraryButtonTitle"]]) {
         // Choose from library
         if (@available(iOS 14, *)) {
+            #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000
             [self launchPhotoKitImagePicker:RNImagePickerTargetLibrarySingleImage];
+            #endif
         } else {
             [self launchImagePicker:RNImagePickerTargetLibrarySingleImage];
         }
@@ -158,6 +168,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
 }
 
 #pragma mark - iOS 14 适配 / PhotoKit
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000
 - (void)launchPhotoKitImagePicker:(RNImagePickerTarget)target options:(NSDictionary *)options API_AVAILABLE(ios(14.0));
 {
     self.options = [options mutableCopy];
@@ -283,7 +294,8 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
 }
 
 #pragma mark PHPickerViewControllerDelegate
-- (void)picker:(PHPickerViewController *)picker didFinishPicking:(NSArray<PHPickerResult *> *)results API_AVAILABLE(ios(14));
+
+- (void)picker:(PHPickerViewController *)picker didFinishPicking:(NSArray<PHPickerResult *> *)results API_AVAILABLE(ios(14.0));
 {
     __block NSString *fileName;
     
@@ -512,7 +524,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
 /**
  通过 PHAsset 对象获取图片的 PHContentEditingInput 内容
  */
-- (void)getPhotoAssetPHContentEditingInputWithAsset:(PHAsset *)asset completionHandler:(void (^)(PHContentEditingInput *))completionHandler API_AVAILABLE(ios(14));
+- (void)getPhotoAssetPHContentEditingInputWithAsset:(PHAsset *)asset completionHandler:(void (^)(PHContentEditingInput *))completionHandler API_AVAILABLE(ios(14.0));
 {
     PHContentEditingInputRequestOptions *options = [[PHContentEditingInputRequestOptions alloc] init];
     options.networkAccessAllowed = false;
@@ -530,7 +542,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
         }
     }];
 }
-
+#endif
 #pragma mark - iOS 13 及以下
 - (void)launchImagePicker:(RNImagePickerTarget)target options:(NSDictionary *)options
 {
@@ -980,6 +992,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
 - (void)checkPhotosPermissions:(void(^)(BOOL granted))callback
 {
     if (@available(iOS 14, *)) {
+        #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000
         PHAuthorizationStatus status = [PHPhotoLibrary authorizationStatusForAccessLevel:PHAccessLevelReadWrite];
         if (status == PHAuthorizationStatusAuthorized) {
             callback(YES);
@@ -1009,6 +1022,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
         else {
             callback(NO);
         }
+        #endif
     } else {
         PHAuthorizationStatus status = [PHPhotoLibrary authorizationStatus];
         if (status == PHAuthorizationStatusAuthorized) {
