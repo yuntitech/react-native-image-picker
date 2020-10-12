@@ -9,5 +9,6 @@ Pod::Spec.new do |s|
   s.source_files  = "ios/*.{h,m}"
   
   s.platform     = :ios, "11.0"
+  s.frameworks   = 'AssetsLibrary', 'AVFoundation', 'Photos', 'PhotosUI'
   s.dependency 'React'
 end
