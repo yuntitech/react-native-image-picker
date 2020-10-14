@@ -8,7 +8,7 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/marcshilling/react-native-image-picker" }
   s.source_files  = "ios/*.{h,m}"
   
-  s.platform     = :ios, "11.0"
+  s.platform     = :ios, "10.0"
   s.frameworks   = 'AssetsLibrary', 'AVFoundation', 'Photos', 'PhotosUI'
   s.dependency 'React'
 end
