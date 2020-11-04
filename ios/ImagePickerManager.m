@@ -13,8 +13,6 @@
 , PHPickerViewControllerDelegate
 #endif
 >
-@property (nonatomic, strong) UIAlertController *alertController;
-@property (nonatomic, strong) UIImagePickerController *picker;
 @property (nonatomic, strong) RCTResponseSenderBlock callback;
 @property (nonatomic, strong) NSDictionary *defaultOptions;
 @property (nonatomic, retain) NSMutableDictionary *options, *response;
@@ -26,6 +24,17 @@
 @end
 
 @implementation ImagePickerManager
+
+static UIImagePickerController *imagePicker = nil;
+
++ (UIImagePickerController *)sharedImagePickerController {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        imagePicker = [[UIImagePickerController alloc] init];
+    });
+    return imagePicker;
+}
+
 #pragma mark - RN Related
 RCT_EXPORT_MODULE();
 
@@ -78,24 +87,24 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
     NSString *takePhotoButtonTitle = [self.options valueForKey:@"takePhotoButtonTitle"];
     NSString *chooseFromLibraryButtonTitle = [self.options valueForKey:@"chooseFromLibraryButtonTitle"];
     
-    self.alertController = [UIAlertController alertControllerWithTitle:title message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:title message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     
     UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:cancelTitle style:UIAlertActionStyleCancel handler:^(UIAlertAction * action) {
         self.callback(@[@{@"didCancel": @YES}]); // Return callback for 'cancel' action (if is required)
     }];
-    [self.alertController addAction:cancelAction];
+    [alertController addAction:cancelAction];
     
     if (![takePhotoButtonTitle isEqual:[NSNull null]] && takePhotoButtonTitle.length > 0) {
         UIAlertAction *takePhotoAction = [UIAlertAction actionWithTitle:takePhotoButtonTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
             [self actionHandler:action];
         }];
-        [self.alertController addAction:takePhotoAction];
+        [alertController addAction:takePhotoAction];
     }
     if (![chooseFromLibraryButtonTitle isEqual:[NSNull null]] && chooseFromLibraryButtonTitle.length > 0) {
         UIAlertAction *chooseFromLibraryAction = [UIAlertAction actionWithTitle:chooseFromLibraryButtonTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
             [self actionHandler:action];
         }];
-        [self.alertController addAction:chooseFromLibraryAction];
+        [alertController addAction:chooseFromLibraryAction];
     }
     
     // Add custom buttons to action sheet
@@ -106,7 +115,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
             UIAlertAction *customAction = [UIAlertAction actionWithTitle:title style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
                 [self actionHandler:action];
             }];
-            [self.alertController addAction:customAction];
+            [alertController addAction:customAction];
         }
     }
     
@@ -116,22 +125,22 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
         /* On iPad, UIAlertController presents a popover view rather than an action sheet like on iPhone. We must provide the location
          of the location to show the popover in this case. For simplicity, we'll just display it on the bottom center of the screen
          to mimic an action sheet */
-        self.alertController.popoverPresentationController.sourceView = root.view;
-        self.alertController.popoverPresentationController.sourceRect = CGRectMake(root.view.bounds.size.width / 2.0, root.view.bounds.size.height, 1.0, 1.0);
+        alertController.popoverPresentationController.sourceView = root.view;
+        alertController.popoverPresentationController.sourceRect = CGRectMake(root.view.bounds.size.width / 2.0, root.view.bounds.size.height, 1.0, 1.0);
         
         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
-            self.alertController.popoverPresentationController.permittedArrowDirections = 0;
-            if (!self.alertController.popoverPresentationController.delegate) {
-                self.alertController.popoverPresentationController.delegate = self;
+            alertController.popoverPresentationController.permittedArrowDirections = 0;
+            if (!alertController.popoverPresentationController.delegate) {
+                alertController.popoverPresentationController.delegate = self;
             }
-            for (id subview in self.alertController.view.subviews) {
+            for (id subview in alertController.view.subviews) {
                 if ([subview isMemberOfClass:[UIView class]]) {
                     ((UIView *)subview).backgroundColor = [UIColor whiteColor];
                 }
             }
         }
         
-        [root presentViewController:self.alertController animated:YES completion:nil];
+        [root presentViewController:alertController animated:YES completion:nil];
     });
 }
 
@@ -191,7 +200,6 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
     PHPickerConfiguration *configuration = [[PHPickerConfiguration alloc] initWithPhotoLibrary:[PHPhotoLibrary sharedPhotoLibrary]];
     self.phPicker = [[PHPickerViewController alloc] initWithConfiguration:configuration];
     self.phPicker.delegate = self;
-    self.picker = [[UIImagePickerController alloc] init];
     
     // 由于 iOS14 推出的 PHPickerViewController 只是替换了原有的 UIImagePickerController 中选择图片的功能
     // 而对于拍照，还是会使用到 UIImagePickerController
@@ -201,12 +209,12 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
         self.callback(@[@{@"error": @"Camera not available on simulator"}]);
         return;
 #else
-        self.picker.sourceType = UIImagePickerControllerSourceTypeCamera;
+        [ImagePickerManager sharedImagePickerController].sourceType = UIImagePickerControllerSourceTypeCamera;
         if ([[self.options objectForKey:@"cameraType"] isEqualToString:@"front"]) {
-            self.picker.cameraDevice = UIImagePickerControllerCameraDeviceFront;
+            [ImagePickerManager sharedImagePickerController].cameraDevice = UIImagePickerControllerCameraDeviceFront;
         }
         else { // "back"
-            self.picker.cameraDevice = UIImagePickerControllerCameraDeviceRear;
+            [ImagePickerManager sharedImagePickerController].cameraDevice = UIImagePickerControllerCameraDeviceRear;
         }
 #endif
     }
@@ -217,44 +225,44 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
         
         // videoQuality 高质量
         if ([[self.options objectForKey:@"videoQuality"] isEqualToString:@"high"]) {
-            self.picker.videoQuality = UIImagePickerControllerQualityTypeHigh;
+            [ImagePickerManager sharedImagePickerController].videoQuality = UIImagePickerControllerQualityTypeHigh;
         }
         // videoQuality 低质量
         else if ([[self.options objectForKey:@"videoQuality"] isEqualToString:@"low"]) {
-            self.picker.videoQuality = UIImagePickerControllerQualityTypeLow;
+            [ImagePickerManager sharedImagePickerController].videoQuality = UIImagePickerControllerQualityTypeLow;
         }
         // videoQuality 中质量
         else {
-            self.picker.videoQuality = UIImagePickerControllerQualityTypeMedium;
+            [ImagePickerManager sharedImagePickerController].videoQuality = UIImagePickerControllerQualityTypeMedium;
         }
         
         // 时长限制
         id durationLimit = [self.options objectForKey:@"durationLimit"];
         if (durationLimit) {
-            self.picker.videoMaximumDuration = [durationLimit doubleValue];
-            self.picker.allowsEditing = NO;
+            [ImagePickerManager sharedImagePickerController].videoMaximumDuration = [durationLimit doubleValue];
+            [ImagePickerManager sharedImagePickerController].allowsEditing = NO;
         }
     }
     
     if ([[self.options objectForKey:@"mediaType"] isEqualToString:@"video"]) {
-        self.picker.mediaTypes = @[(NSString *)kUTTypeMovie];
+        [ImagePickerManager sharedImagePickerController].mediaTypes = @[(NSString *)kUTTypeMovie];
     } else if ([[self.options objectForKey:@"mediaType"] isEqualToString:@"mixed"]) {
-        self.picker.mediaTypes = @[(NSString *)kUTTypeMovie, (NSString *)kUTTypeImage];
+        [ImagePickerManager sharedImagePickerController].mediaTypes = @[(NSString *)kUTTypeMovie, (NSString *)kUTTypeImage];
     } else {
-        self.picker.mediaTypes = @[(NSString *)kUTTypeImage];
+        [ImagePickerManager sharedImagePickerController].mediaTypes = @[(NSString *)kUTTypeImage];
     }
     
     if ([[self.options objectForKey:@"allowsEditing"] boolValue]) {
-        self.picker.allowsEditing = true;
+        [ImagePickerManager sharedImagePickerController].allowsEditing = true;
     }
-    self.picker.modalPresentationStyle = UIModalPresentationCurrentContext;
-    self.picker.delegate = self;
+    [ImagePickerManager sharedImagePickerController].modalPresentationStyle = UIModalPresentationCurrentContext;
+    [ImagePickerManager sharedImagePickerController].delegate = self;
     
     // Check permissions
     void (^showPickerViewController)(void) = ^void() {
         dispatch_async(dispatch_get_main_queue(), ^{
             UIViewController *root = RCTPresentedViewController();
-            [root presentViewController:self.picker animated:YES completion:nil];
+            [root presentViewController:[ImagePickerManager sharedImagePickerController] animated:YES completion:nil];
         });
     };
     
@@ -469,7 +477,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
             
             if ([[storageOptions objectForKey:@"waitUntilSaved"] boolValue] == NO ||
                 [[storageOptions objectForKey:@"cameraRoll"] boolValue] == NO ||
-                self.picker.sourceType != UIImagePickerControllerSourceTypeCamera)
+                [ImagePickerManager sharedImagePickerController].sourceType != UIImagePickerControllerSourceTypeCamera)
             {
                 self.callback(@[self.response]);
             }
@@ -558,64 +566,62 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
 }
 
 - (void)startLaunchImagePicker: (RNImagePickerTarget)target {
-    self.picker = [[UIImagePickerController alloc] init];
-    
     if (target == RNImagePickerTargetCamera) {
 #if TARGET_IPHONE_SIMULATOR
         self.callback(@[@{@"error": @"Camera not available on simulator"}]);
         return;
 #else
-        self.picker.sourceType = UIImagePickerControllerSourceTypeCamera;
+        [ImagePickerManager sharedImagePickerController].sourceType = UIImagePickerControllerSourceTypeCamera;
         if ([[self.options objectForKey:@"cameraType"] isEqualToString:@"front"]) {
-            self.picker.cameraDevice = UIImagePickerControllerCameraDeviceFront;
+            [ImagePickerManager sharedImagePickerController].cameraDevice = UIImagePickerControllerCameraDeviceFront;
         }
         else { // "back"
-            self.picker.cameraDevice = UIImagePickerControllerCameraDeviceRear;
+            [ImagePickerManager sharedImagePickerController].cameraDevice = UIImagePickerControllerCameraDeviceRear;
         }
 #endif
     }
     else { // RNImagePickerTargetLibrarySingleImage
-        self.picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+        [ImagePickerManager sharedImagePickerController].sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
     }
     
     if ([[self.options objectForKey:@"mediaType"] isEqualToString:@"video"]
         || [[self.options objectForKey:@"mediaType"] isEqualToString:@"mixed"]) {
         
         if ([[self.options objectForKey:@"videoQuality"] isEqualToString:@"high"]) {
-            self.picker.videoQuality = UIImagePickerControllerQualityTypeHigh;
+            [ImagePickerManager sharedImagePickerController].videoQuality = UIImagePickerControllerQualityTypeHigh;
         }
         else if ([[self.options objectForKey:@"videoQuality"] isEqualToString:@"low"]) {
-            self.picker.videoQuality = UIImagePickerControllerQualityTypeLow;
+            [ImagePickerManager sharedImagePickerController].videoQuality = UIImagePickerControllerQualityTypeLow;
         }
         else {
-            self.picker.videoQuality = UIImagePickerControllerQualityTypeMedium;
+            [ImagePickerManager sharedImagePickerController].videoQuality = UIImagePickerControllerQualityTypeMedium;
         }
         
         id durationLimit = [self.options objectForKey:@"durationLimit"];
         if (durationLimit) {
-            self.picker.videoMaximumDuration = [durationLimit doubleValue];
-            self.picker.allowsEditing = NO;
+            [ImagePickerManager sharedImagePickerController].videoMaximumDuration = [durationLimit doubleValue];
+            [ImagePickerManager sharedImagePickerController].allowsEditing = NO;
         }
     }
     if ([[self.options objectForKey:@"mediaType"] isEqualToString:@"video"]) {
-        self.picker.mediaTypes = @[(NSString *)kUTTypeMovie];
+        [ImagePickerManager sharedImagePickerController].mediaTypes = @[(NSString *)kUTTypeMovie];
     } else if ([[self.options objectForKey:@"mediaType"] isEqualToString:@"mixed"]) {
-        self.picker.mediaTypes = @[(NSString *)kUTTypeMovie, (NSString *)kUTTypeImage];
+        [ImagePickerManager sharedImagePickerController].mediaTypes = @[(NSString *)kUTTypeMovie, (NSString *)kUTTypeImage];
     } else {
-        self.picker.mediaTypes = @[(NSString *)kUTTypeImage];
+        [ImagePickerManager sharedImagePickerController].mediaTypes = @[(NSString *)kUTTypeImage];
     }
     
     if ([[self.options objectForKey:@"allowsEditing"] boolValue]) {
-        self.picker.allowsEditing = true;
+        [ImagePickerManager sharedImagePickerController].allowsEditing = true;
     }
-    self.picker.modalPresentationStyle = UIModalPresentationCurrentContext;
-    self.picker.delegate = self;
+    [ImagePickerManager sharedImagePickerController].modalPresentationStyle = UIModalPresentationCurrentContext;
+    [ImagePickerManager sharedImagePickerController].delegate = self;
     
     // Check permissions
     void (^showPickerViewController)(void) = ^void() {
         dispatch_async(dispatch_get_main_queue(), ^{
             UIViewController *root = RCTPresentedViewController();
-            [root presentViewController:self.picker animated:YES completion:nil];
+            [root presentViewController:[ImagePickerManager sharedImagePickerController] animated:YES completion:nil];
         });
     };
     
@@ -830,7 +836,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
             [self.response setObject:@(image.size.height) forKey:@"height"];
             
             NSDictionary *storageOptions = [self.options objectForKey:@"storageOptions"];
-            if (storageOptions && [[storageOptions objectForKey:@"cameraRoll"] boolValue] == YES && self.picker.sourceType == UIImagePickerControllerSourceTypeCamera) {
+            if (storageOptions && [[storageOptions objectForKey:@"cameraRoll"] boolValue] == YES && [ImagePickerManager sharedImagePickerController].sourceType == UIImagePickerControllerSourceTypeCamera) {
                 ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
                 if ([[storageOptions objectForKey:@"waitUntilSaved"] boolValue]) {
                     [library writeImageToSavedPhotosAlbum:image.CGImage metadata:[info valueForKey:UIImagePickerControllerMediaMetadata] completionBlock:^(NSURL *assetURL, NSError *error) {
@@ -897,7 +903,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
             }
             
             NSDictionary *storageOptions = [self.options objectForKey:@"storageOptions"];
-            if (storageOptions && [[storageOptions objectForKey:@"cameraRoll"] boolValue] == YES && self.picker.sourceType == UIImagePickerControllerSourceTypeCamera) {
+            if (storageOptions && [[storageOptions objectForKey:@"cameraRoll"] boolValue] == YES && [ImagePickerManager sharedImagePickerController].sourceType == UIImagePickerControllerSourceTypeCamera) {
                 ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
                 [library writeVideoAtPathToSavedPhotosAlbum:videoDestinationURL completionBlock:^(NSURL *assetURL, NSError *error) {
                     if (error) {
@@ -933,7 +939,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
             
             if ([[storageOptions objectForKey:@"waitUntilSaved"] boolValue] == NO ||
                 [[storageOptions objectForKey:@"cameraRoll"] boolValue] == NO ||
-                self.picker.sourceType != UIImagePickerControllerSourceTypeCamera)
+                [ImagePickerManager sharedImagePickerController].sourceType != UIImagePickerControllerSourceTypeCamera)
             {
                 self.callback(@[self.response]);
             }
@@ -941,6 +947,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
         else {
             self.callback(@[self.response]);
         }
+        picker.delegate = nil;
     };
     
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -953,6 +960,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
     dispatch_async(dispatch_get_main_queue(), ^{
         [picker dismissViewControllerAnimated:YES completion:^{
             self.callback(@[@{@"didCancel": @YES}]);
+            picker.delegate = nil;
         }];
     });
 }
