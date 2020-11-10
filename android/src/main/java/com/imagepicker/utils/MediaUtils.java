@@ -56,7 +56,7 @@ public class MediaUtils
             path.mkdirs();
             result.createNewFile();
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             e.printStackTrace();
             result = null;
