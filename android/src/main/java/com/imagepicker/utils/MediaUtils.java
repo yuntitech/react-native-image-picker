@@ -48,7 +48,9 @@ public class MediaUtils
         final File path = ReadableMapUtils.hasAndNotNullReadableMap(options, "storageOptions") && !forceLocal
                 ? Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
                 : reactContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-
+        if (path == null) {
+            path = reactContext.getExternalFilesDir(null);
+        }
         File result = new File(path, filename);
 
         try
