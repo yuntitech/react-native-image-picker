@@ -5,9 +5,8 @@
 #import <Photos/Photos.h>
 #import <PhotosUI/PhotosUI.h>
 #import <React/RCTUtils.h>
-
+#import "NonAutorotateImagePickerViewController.h"
 @import MobileCoreServices;
-
 @interface ImagePickerManager () <UIPopoverPresentationControllerDelegate
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000 // Xcode 12 and iOS 14, or greater
 , PHPickerViewControllerDelegate
@@ -30,10 +29,11 @@ static UIImagePickerController *imagePicker = nil;
 + (UIImagePickerController *)sharedImagePickerController {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        imagePicker = [[UIImagePickerController alloc] init];
+        imagePicker = [[NonAutorotateImagePickerViewController alloc] init];
     });
     return imagePicker;
 }
+
 
 #pragma mark - RN Related
 RCT_EXPORT_MODULE();
@@ -200,6 +200,8 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
     PHPickerConfiguration *configuration = [[PHPickerConfiguration alloc] initWithPhotoLibrary:[PHPhotoLibrary sharedPhotoLibrary]];
     self.phPicker = [[PHPickerViewController alloc] initWithConfiguration:configuration];
     self.phPicker.delegate = self;
+    self.phPicker.modalPresentationStyle = UIModalPresentationFullScreen;
+    
     
     // 由于 iOS14 推出的 PHPickerViewController 只是替换了原有的 UIImagePickerController 中选择图片的功能
     // 而对于拍照，还是会使用到 UIImagePickerController
@@ -255,7 +257,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
     if ([[self.options objectForKey:@"allowsEditing"] boolValue]) {
         [ImagePickerManager sharedImagePickerController].allowsEditing = true;
     }
-    [ImagePickerManager sharedImagePickerController].modalPresentationStyle = UIModalPresentationCurrentContext;
+    [ImagePickerManager sharedImagePickerController].modalPresentationStyle = UIModalPresentationFullScreen;
     [ImagePickerManager sharedImagePickerController].delegate = self;
     
     // Check permissions
@@ -614,7 +616,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
     if ([[self.options objectForKey:@"allowsEditing"] boolValue]) {
         [ImagePickerManager sharedImagePickerController].allowsEditing = true;
     }
-    [ImagePickerManager sharedImagePickerController].modalPresentationStyle = UIModalPresentationCurrentContext;
+    [ImagePickerManager sharedImagePickerController].modalPresentationStyle = UIModalPresentationFullScreen;
     [ImagePickerManager sharedImagePickerController].delegate = self;
     
     // Check permissions
