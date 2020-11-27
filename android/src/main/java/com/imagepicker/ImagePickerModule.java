@@ -27,6 +27,7 @@ import android.content.pm.PackageManager;
 
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Callback;
+import com.facebook.react.bridge.JavaOnlyMap;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
@@ -143,7 +144,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
         }
 
         this.callback = callback;
-        this.options = options;
+        this.options = options == null ? getCommonOptions() : options;
         imageConfig = new ImageConfig(null, null, 0, 0, 100, 0, false);
 
         final AlertDialog dialog = UI.chooseDialog(this, options, new UI.OnAction() {
@@ -205,7 +206,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
             return;
         }
         this.callback = callback;
-        this.options = options;
+        this.options = options == null ? getCommonOptions() : options;
 
         if (!permissionsCheck(currentActivity, callback, REQUEST_PERMISSIONS_FOR_CAMERA)) {
             return;
@@ -678,5 +679,26 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
         if (options.hasKey("durationLimit")) {
             videoDurationLimit = options.getInt("durationLimit");
         }
+    }
+
+    private ReadableMap getCommonOptions() {
+        JavaOnlyMap options = new JavaOnlyMap();
+        options.putString("title", "请选择图片");
+        options.putString("takePhotoButtonTitle", "拍照");
+        options.putString("chooseFromLibraryButtonTitle", "从手机相册选择");
+        options.putString("cancelButtonTitle", "取消");
+        options.putString("mediaType", "photo");
+        options.putDouble("quality", 0.6);
+        JavaOnlyMap storageOptions = new JavaOnlyMap();
+        storageOptions.putBoolean("skipBackup", true);
+        storageOptions.putString("path", "images");
+        options.putMap("storageOptions", storageOptions);
+        JavaOnlyMap permissionDenied = new JavaOnlyMap();
+        permissionDenied.putString("title", "提示");
+        permissionDenied.putString("text", "相机访问权限被拒绝，是否去开启？");
+        permissionDenied.putString("reTryTitle", "去开启");
+        permissionDenied.putString("okTitle", "取消");
+        options.putMap("permissionDenied", permissionDenied);
+        return options;
     }
 }
