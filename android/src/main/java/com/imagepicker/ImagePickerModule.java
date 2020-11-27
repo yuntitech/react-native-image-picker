@@ -283,7 +283,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
             return;
         }
         this.callback = callback;
-        this.options = options;
+        this.options = options == null ? getCommonOptions() : options;
 
         if (!permissionsCheck(currentActivity, callback, REQUEST_PERMISSIONS_FOR_LIBRARY)) {
             return;
