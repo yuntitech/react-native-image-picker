@@ -8,6 +8,9 @@
 #import "NonAutorotateImagePickerViewController.h"
 @import MobileCoreServices;
 @interface ImagePickerManager () <UIPopoverPresentationControllerDelegate
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
+, UIAdaptivePresentationControllerDelegate
+#endif
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000 // Xcode 12 and iOS 14, or greater
 , PHPickerViewControllerDelegate
 #endif
@@ -200,6 +203,8 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
     PHPickerConfiguration *configuration = [[PHPickerConfiguration alloc] initWithPhotoLibrary:[PHPhotoLibrary sharedPhotoLibrary]];
     self.phPicker = [[PHPickerViewController alloc] initWithConfiguration:configuration];
     self.phPicker.delegate = self;
+    // 设置 PresentationDelegate 为当前对象，方便监听用户下滑 dismiss 掉 PHPicker 事件
+    self.phPicker.presentationController.delegate = self;
     self.phPicker.modalPresentationStyle = UIModalPresentationFullScreen;
     
     
@@ -304,7 +309,6 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
 }
 
 #pragma mark PHPickerViewControllerDelegate
-
 - (void)picker:(PHPickerViewController *)picker didFinishPicking:(NSArray<PHPickerResult *> *)results API_AVAILABLE(ios(14.0));
 {
     __block NSString *fileName;
@@ -523,6 +527,8 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
         NSItemProvider *itemProvider = results.firstObject.itemProvider;
         if ([itemProvider canLoadObjectOfClass:UIImage.class]) {
             [itemProvider loadObjectOfClass:UIImage.class completionHandler:itemProviderLoadCompletionHandler];
+        } else {
+            self.callback(@[@{@"didCancel": @YES}]);
         }
     };
     
@@ -553,6 +559,14 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
     }];
 }
 #endif
+
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
+- (void)presentationControllerDidDismiss:(UIPresentationController *)presentationController
+{
+    self.callback(@[@{@"didCancel": @YES}]);
+}
+#endif
+
 #pragma mark - iOS 13 及以下
 - (void)launchImagePicker:(RNImagePickerTarget)target options:(NSDictionary *)options
 {
