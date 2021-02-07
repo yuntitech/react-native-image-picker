@@ -55,8 +55,12 @@ public class MediaUtils
 
         try
         {
-            path.mkdirs();
-            result.createNewFile();
+            if (path != null) {
+                path.mkdirs();
+                result.createNewFile();
+            } else {
+                result = null;
+            }
         }
         catch (Exception e)
         {
