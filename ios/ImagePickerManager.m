@@ -201,12 +201,6 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
 - (void)startLaunchPhotoKitImagePicker:(RNImagePickerTarget)target API_AVAILABLE(ios(14.0));
 {
     PHPickerConfiguration *configuration = [[PHPickerConfiguration alloc] initWithPhotoLibrary:[PHPhotoLibrary sharedPhotoLibrary]];
-    self.phPicker = [[PHPickerViewController alloc] initWithConfiguration:configuration];
-    self.phPicker.delegate = self;
-    // 设置 PresentationDelegate 为当前对象，方便监听用户下滑 dismiss 掉 PHPicker 事件
-    self.phPicker.presentationController.delegate = self;
-    self.phPicker.modalPresentationStyle = UIModalPresentationFullScreen;
-    
     
     // 由于 iOS14 推出的 PHPickerViewController 只是替换了原有的 UIImagePickerController 中选择图片的功能
     // 而对于拍照，还是会使用到 UIImagePickerController
@@ -256,8 +250,16 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
     } else if ([[self.options objectForKey:@"mediaType"] isEqualToString:@"mixed"]) {
         [ImagePickerManager sharedImagePickerController].mediaTypes = @[(NSString *)kUTTypeMovie, (NSString *)kUTTypeImage];
     } else {
+        configuration.filter = PHPickerFilter.imagesFilter;
         [ImagePickerManager sharedImagePickerController].mediaTypes = @[(NSString *)kUTTypeImage];
     }
+    
+
+    self.phPicker = [[PHPickerViewController alloc] initWithConfiguration:configuration];
+    self.phPicker.delegate = self;
+    // 设置 PresentationDelegate 为当前对象，方便监听用户下滑 dismiss 掉 PHPicker 事件
+    self.phPicker.presentationController.delegate = self;
+    self.phPicker.modalPresentationStyle = UIModalPresentationFullScreen;
     
     if ([[self.options objectForKey:@"allowsEditing"] boolValue]) {
         [ImagePickerManager sharedImagePickerController].allowsEditing = true;
@@ -309,6 +311,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
 }
 
 #pragma mark PHPickerViewControllerDelegate
+
 - (void)picker:(PHPickerViewController *)picker didFinishPicking:(NSArray<PHPickerResult *> *)results API_AVAILABLE(ios(14.0));
 {
     __block NSString *fileName;
