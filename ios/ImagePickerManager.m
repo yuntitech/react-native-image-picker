@@ -246,6 +246,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
     }
     
     if ([[self.options objectForKey:@"mediaType"] isEqualToString:@"video"]) {
+        configuration.filter = PHPickerFilter.videosFilter;
         [ImagePickerManager sharedImagePickerController].mediaTypes = @[(NSString *)kUTTypeMovie];
     } else if ([[self.options objectForKey:@"mediaType"] isEqualToString:@"mixed"]) {
         [ImagePickerManager sharedImagePickerController].mediaTypes = @[(NSString *)kUTTypeMovie, (NSString *)kUTTypeImage];
