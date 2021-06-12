@@ -155,7 +155,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
                     return;
                 }
 
-                if (options.getBoolean("useCameraRecord")) {
+                if (options.hasKey("useCameraRecord") && options.getBoolean("useCameraRecord")) {
                     responseHelper.cleanResponse();
                     responseHelper.putBoolean("useCameraRecord", true);
                     responseHelper.invokeResponse(callback);
