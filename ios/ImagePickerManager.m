@@ -132,10 +132,6 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
     alertController.popoverPresentationController.sourceRect = CGRectMake(root.view.bounds.size.width / 2.0, root.view.bounds.size.height, 1.0, 1.0);
     
     if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
-      alertController.popoverPresentationController.permittedArrowDirections = 0;
-      if (!alertController.popoverPresentationController.delegate) {
-        alertController.popoverPresentationController.delegate = self;
-      }
       for (id subview in alertController.view.subviews) {
         if ([subview isMemberOfClass:[UIView class]]) {
           ((UIView *)subview).backgroundColor = [UIColor whiteColor];
