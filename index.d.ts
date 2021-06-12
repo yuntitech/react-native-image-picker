@@ -17,6 +17,7 @@ declare module "react-native-image-picker" {
         latitude?: number;
         longitude?: number;
         timestamp?: string;
+        useCameraRecord?: boolean;
     }
 
     interface CustomButtonOptions {
@@ -41,6 +42,7 @@ declare module "react-native-image-picker" {
         allowsEditing?: boolean;
         noData?: boolean;
         storageOptions?: StorageOptions;
+        useCameraRecord?: boolean;
     }
 
     interface StorageOptions {
