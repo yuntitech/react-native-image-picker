@@ -527,10 +527,21 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
     }
   };
   
+  void (^videoLoadCompletionHandler)(NSURL * _Nullable url, NSError * _Nullable error) = ^(NSURL * _Nullable url, NSError * _Nullable error) {
+    NSMutableDictionary *response = [NSMutableDictionary dictionary];
+    [response setValue:error.localizedDescription forKey:@"error"];
+    if (url) {
+      [response addEntriesFromDictionary:[self mapVideoToAsset:url]];
+    }
+    self.callback(@[response]);
+  };
+  
   dispatch_block_t dismissCompletionBlock = ^{
     NSItemProvider *itemProvider = results.firstObject.itemProvider;
     if ([itemProvider canLoadObjectOfClass:UIImage.class]) {
       [itemProvider loadObjectOfClass:UIImage.class completionHandler:itemProviderLoadCompletionHandler];
+    } else if ([itemProvider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeMovie]) {
+      [itemProvider loadFileRepresentationForTypeIdentifier:(NSString *)kUTTypeMovie completionHandler:videoLoadCompletionHandler];
     } else {
       self.callback(@[@{@"didCancel": @YES}]);
     }
@@ -539,6 +550,38 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
   dispatch_async(dispatch_get_main_queue(), ^{
     [picker dismissViewControllerAnimated:YES completion:dismissCompletionBlock];
   });
+}
+
+// https://github.com/react-native-image-picker/react-native-image-picker/blob/main/ios/ImagePickerManager.m#L226
+- (NSMutableDictionary *)mapVideoToAsset:(NSURL *)url {
+  NSString *fileName = [url lastPathComponent];
+  NSString *path = [[NSTemporaryDirectory() stringByStandardizingPath] stringByAppendingPathComponent:fileName];
+  NSURL *videoDestinationURL = [NSURL fileURLWithPath:path];
+  
+  if (![url.URLByResolvingSymlinksInPath.path isEqualToString:videoDestinationURL.URLByResolvingSymlinksInPath.path]) {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    
+    // Delete file if it already exists
+    if ([fileManager fileExistsAtPath:videoDestinationURL.path]) {
+      [fileManager removeItemAtURL:videoDestinationURL error:nil];
+    }
+    
+    if (url) { // Protect against reported crash
+      
+      // If we have write access to the source file, move it. Otherwise use copy.
+      if ([fileManager isWritableFileAtPath:[url path]]) {
+        [fileManager moveItemAtURL:url toURL:videoDestinationURL error:nil];
+      } else {
+        [fileManager copyItemAtURL:url toURL:videoDestinationURL error:nil];
+      }
+    }
+  }
+  
+  NSMutableDictionary *asset = [[NSMutableDictionary alloc] init];
+  asset[@"duration"] = @(roundf(CMTimeGetSeconds([AVAsset assetWithURL:videoDestinationURL].duration)));
+  asset[@"uri"] = videoDestinationURL.absoluteString;
+  
+  return asset;
 }
 
 /**
