@@ -78,6 +78,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     protected Uri cameraCaptureURI;
     private Boolean noData = false;
     private Boolean pickVideo = false;
+    private Boolean pickImage = false;
     private ImageConfig imageConfig = new ImageConfig(null, null, 0, 0, 100, 0, false);
 
     @Deprecated
@@ -303,10 +304,14 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
             requestCode = REQUEST_LAUNCH_VIDEO_LIBRARY;
             libraryIntent = new Intent(Intent.ACTION_PICK);
             libraryIntent.setType("video/*");
+        } else if (pickImage) {
+            requestCode = REQUEST_LAUNCH_IMAGE_LIBRARY;
+            libraryIntent = new Intent(Intent.ACTION_PICK);
+            libraryIntent.setType("image/*");
         } else {
             requestCode = REQUEST_LAUNCH_IMAGE_LIBRARY;
-            libraryIntent = new Intent(Intent.ACTION_PICK,
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            libraryIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            libraryIntent.setType("image/* video/*");
         }
 
         if (libraryIntent.resolveActivity(reactContext.getPackageManager()) == null) {
@@ -630,9 +635,6 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        if (inputStream == null) {
-            return null;
-        }
 
         byte[] bytes;
         byte[] buffer = new byte[8192];
@@ -676,6 +678,9 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
         pickVideo = false;
         if (options.hasKey("mediaType") && options.getString("mediaType").equals("video")) {
             pickVideo = true;
+        }
+        if (options.hasKey("mediaType") && options.getString("mediaType").equals("photo")) {
+            pickImage = true;
         }
         videoQuality = 1;
         if (options.hasKey("videoQuality") && options.getString("videoQuality").equals("low")) {
