@@ -630,12 +630,17 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
     self.callback(@[@{@"error": @"Camera not available on simulator"}]);
     return;
 #else
-    [ImagePickerManager sharedImagePickerController].sourceType = UIImagePickerControllerSourceTypeCamera;
-    if ([[self.options objectForKey:@"cameraType"] isEqualToString:@"front"]) {
-      [ImagePickerManager sharedImagePickerController].cameraDevice = UIImagePickerControllerCameraDeviceFront;
-    }
-    else { // "back"
-      [ImagePickerManager sharedImagePickerController].cameraDevice = UIImagePickerControllerCameraDeviceRear;
+    if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
+        [ImagePickerManager sharedImagePickerController].sourceType = UIImagePickerControllerSourceTypeCamera;
+        if ([[self.options objectForKey:@"cameraType"] isEqualToString:@"front"]) {
+            [ImagePickerManager sharedImagePickerController].cameraDevice = UIImagePickerControllerCameraDeviceFront;
+        }
+        else { // "back"
+            [ImagePickerManager sharedImagePickerController].cameraDevice = UIImagePickerControllerCameraDeviceRear;
+        }
+    } else {
+        self.callback(@[@{@"error": @"Camera not available"}]);
+        return;
     }
 #endif
   }
