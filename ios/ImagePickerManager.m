@@ -680,7 +680,13 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
   // Check permissions
   void (^showPickerViewController)(void) = ^void() {
     dispatch_async(dispatch_get_main_queue(), ^{
+      // 已经有 presented 的 VC 了，就不再去 present 了
+      if (RCTKeyWindow().rootViewController.presentedViewController) return;
+      
       UIViewController *root = RCTPresentedViewController();
+      // FIX: https://www.cnblogs.com/liuhuakun/p/11375511.html
+      // https://bugly.qq.com/v2/crash-reporting/crashes/b7588917d3/347003?pid=2
+      if ([root isKindOfClass:[NonAutorotateImagePickerViewController class]]) return;
       [root presentViewController:self.imagePickerController animated:YES completion:nil];
     });
   };

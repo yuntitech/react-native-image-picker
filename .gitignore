@@ -39,3 +39,4 @@ yarn.lock
 *.iml
 
 .vscode/
+.history
