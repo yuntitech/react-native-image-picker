@@ -74,6 +74,15 @@ public class ResponseHelper
         invokeResponse(callback);
     }
 
+    public void invokeError(@NonNull final Callback callback,
+                            @NonNull final String error,@NonNull final String permission)
+    {
+        cleanResponse();
+        response.putString("error", error);
+        response.putString("permission", permission);
+        invokeResponse(callback);
+    }
+
     public void invokeResponse(@NonNull final Callback callback)
     {
         try {

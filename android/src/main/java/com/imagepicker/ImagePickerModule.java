@@ -103,7 +103,8 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
             }
 
             if (!permissionsGranted) {
-                responseHelper.invokeError(callback, "Permissions weren't granted");
+                String permission = requestCode == REQUEST_PERMISSIONS_FOR_LIBRARY?Manifest.permission.WRITE_EXTERNAL_STORAGE:Manifest.permission.CAMERA ;
+                responseHelper.invokeError(callback, "Permissions weren't granted",permission);
                 return false;
             }
 
@@ -497,13 +498,21 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     private boolean permissionsCheck(@NonNull final Activity activity,
                                      @NonNull final Callback callback,
                                      @NonNull final int requestCode) {
-        final int writePermission = ActivityCompat
-                .checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        final int cameraPermission = ActivityCompat
-                .checkSelfPermission(activity, Manifest.permission.CAMERA);
+        boolean permissionsGrated   ;
+        if(requestCode == REQUEST_PERMISSIONS_FOR_CAMERA){
+            // 照相机
+            final int writePermission = ActivityCompat
+                    .checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            final int cameraPermission = ActivityCompat
+                    .checkSelfPermission(activity, Manifest.permission.CAMERA);
 
-        final boolean permissionsGrated = writePermission == PackageManager.PERMISSION_GRANTED &&
-                cameraPermission == PackageManager.PERMISSION_GRANTED;
+            permissionsGrated = writePermission == PackageManager.PERMISSION_GRANTED &&
+                    cameraPermission == PackageManager.PERMISSION_GRANTED;
+        }else{
+            final int readPermission = ActivityCompat
+                    .checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            permissionsGrated = readPermission == PackageManager.PERMISSION_GRANTED ;
+        }
 
         if (!permissionsGrated) {
             final Boolean dontAskAgain = ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE) && ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA);
